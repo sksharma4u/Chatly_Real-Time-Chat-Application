@@ -18,18 +18,49 @@ io.on('connection', (socket) => {
     socket.on('joinRoom', ({ username, room }) => {
         const user = userJoin(socket.id, username, room)
         socket.join(user.room);
-        console.log(user.username);
+
         //welcome message
 
         socket.emit('message', formatMessage(botName, "Welcome to Chatly!"))
 
         socket.broadcast.to(user.room).emit('message', formatMessage(botName, `${user.username} has Joined the chat`))
-        io.to(user.room).emit('roomUsers'), {
+        io.to(user.room).emit('roomUsers', {
             room: user.room,
             users: getRoomUsers(user.room)
-        }
+
+        })
+
     })
-})
+
+
+    socket.on('chatMessage', (msg) => {
+        const user = getCurrentUser(socket.id);
+        io.to(user.room).emit('message', formatMessage(user.username, msg))
+    });
+
+
+
+
+    socket.on('disconnect', () => {
+
+        const user = userLeaves(socket.id);
+        if (user) {
+            io.to(user.room).emit('message', formatMessage(botName, `${user.username} has left the chat`))
+
+            io.to(user.room).emit('roomUsers', {
+                room: user.room,
+                users: getRoomUsers(user.room)
+
+            })
+        }
+
+
+
+    })
+
+
+
+});
 
 const port = 3000;
 
